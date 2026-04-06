@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestor de Tareas</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <h1>Gestor de Tareas</h1>
+        <p>Frontend inicial para organizar tareas del equipo</p>
+      </header>
+
+      <section class="card">
+        <h2>Nueva tarea</h2>
+        <form id="task-form" class="task-form">
+          <label>
+            Titulo
+            <input id="title" type="text" maxlength="120" required />
+          </label>
+          <label>
+            Descripcion
+            <textarea id="description" rows="3" maxlength="300"></textarea>
+          </label>
+          <button type="submit">Agregar tarea</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Listado</h2>
+        <ul id="task-list" class="task-list"></ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
