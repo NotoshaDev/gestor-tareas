@@ -11,29 +11,46 @@ const tasks = [
   }
 ];
 
+function createTaskItem(task) {
+  const item = document.createElement("li");
+  item.className = "task-item";
+
+  const taskTitle = document.createElement("h3");
+  taskTitle.textContent = task.title;
+
+  const taskDescription = document.createElement("p");
+  taskDescription.textContent = task.description || "Sin descripcion";
+
+  item.appendChild(taskTitle);
+  item.appendChild(taskDescription);
+
+  return item;
+}
+
+function createEmptyStateItem() {
+  const emptyItem = document.createElement("li");
+  emptyItem.textContent = "No hay tareas registradas.";
+  return emptyItem;
+}
+
 function renderTasks() {
   taskList.innerHTML = "";
 
   if (tasks.length === 0) {
-    const empty = document.createElement("li");
-    empty.textContent = "No hay tareas registradas.";
-    taskList.appendChild(empty);
+    taskList.appendChild(createEmptyStateItem());
     return;
   }
 
   tasks.forEach((task) => {
-    const item = document.createElement("li");
-    item.className = "task-item";
+    taskList.appendChild(createTaskItem(task));
+  });
+}
 
-    const title = document.createElement("h3");
-    title.textContent = task.title;
-
-    const description = document.createElement("p");
-    description.textContent = task.description || "Sin descripcion";
-
-    item.appendChild(title);
-    item.appendChild(description);
-    taskList.appendChild(item);
+function addTask(title, description) {
+  tasks.unshift({
+    id: Date.now(),
+    title,
+    description
   });
 }
 
@@ -47,11 +64,7 @@ form.addEventListener("submit", (event) => {
     return;
   }
 
-  tasks.unshift({
-    id: Date.now(),
-    title,
-    description
-  });
+  addTask(title, description);
 
   form.reset();
   renderTasks();
