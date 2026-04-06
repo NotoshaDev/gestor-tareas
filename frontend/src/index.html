@@ -3,35 +3,104 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gestor de Tareas</title>
+    <title>Gestor de Tareas Pokemon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="app">
       <header class="app-header">
-        <h1>Gestor de Tareas</h1>
-        <p>Frontend inicial para organizar tareas del equipo</p>
+        <p class="eyebrow">Centro de mando del entrenador</p>
+        <h1>Gestor de Tareas Pokemon</h1>
+        <p class="subtitle">
+          Administra misiones del equipo, prioridades y progreso del dia.
+        </p>
+        <div class="pokeball-mark" aria-hidden="true"></div>
       </header>
 
-      <section class="card">
-        <h2>Nueva tarea</h2>
-        <form id="task-form" class="task-form">
-          <label>
-            Titulo
-            <input id="title" type="text" maxlength="120" required />
-          </label>
-          <label>
-            Descripcion
-            <textarea id="description" rows="3" maxlength="300"></textarea>
-          </label>
-          <button type="submit">Agregar tarea</button>
-        </form>
+      <section class="stats-grid" id="stats-grid">
+        <article class="stat-card">
+          <p>Total de misiones</p>
+          <strong id="stat-total">0</strong>
+        </article>
+        <article class="stat-card">
+          <p>Pendientes</p>
+          <strong id="stat-pending">0</strong>
+        </article>
+        <article class="stat-card">
+          <p>Completadas</p>
+          <strong id="stat-done">0</strong>
+        </article>
+        <article class="stat-card">
+          <p>Fuera de tiempo</p>
+          <strong id="stat-overdue">0</strong>
+        </article>
       </section>
 
-      <section class="card">
-        <h2>Listado</h2>
-        <ul id="task-list" class="task-list"></ul>
-      </section>
+      <div class="layout">
+        <section class="card card-form">
+          <h2>Nueva mision</h2>
+          <form id="task-form" class="task-form" novalidate>
+            <label>
+              Nombre de la mision
+              <input id="title" type="text" maxlength="120" required />
+            </label>
+            <label>
+              Descripcion
+              <textarea id="description" rows="3" maxlength="300"></textarea>
+            </label>
+            <div class="form-row">
+              <label>
+                Prioridad
+                <select id="priority">
+                  <option value="low">Rutinaria</option>
+                  <option value="medium" selected>Importante</option>
+                  <option value="high">Urgente</option>
+                </select>
+              </label>
+              <label>
+                Limite de la mision
+                <input id="due-date" type="date" />
+              </label>
+            </div>
+            <p id="form-error" class="form-error" aria-live="polite"></p>
+            <button type="submit" class="primary-button">Registrar mision</button>
+          </form>
+        </section>
+
+        <section class="card card-list">
+          <div class="list-header">
+            <h2>Misiones del equipo</h2>
+            <div class="list-controls">
+              <input
+                id="search-input"
+                type="search"
+                placeholder="Buscar por nombre o descripcion"
+              />
+              <select id="sort-select">
+                <option value="newest">Mas recientes</option>
+                <option value="oldest">Mas antiguas</option>
+                <option value="priority">Por prioridad</option>
+                <option value="dueDate">Por limite</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="filter-group" class="filter-group">
+            <button class="filter-chip is-active" data-filter="all" type="button">Todas</button>
+            <button class="filter-chip" data-filter="pending" type="button">Pendientes</button>
+            <button class="filter-chip" data-filter="done" type="button">Completadas</button>
+            <button class="filter-chip" data-filter="overdue" type="button">Fuera de tiempo</button>
+          </div>
+
+          <ul id="task-list" class="task-list"></ul>
+        </section>
+      </div>
     </main>
 
     <script src="app.js"></script>
