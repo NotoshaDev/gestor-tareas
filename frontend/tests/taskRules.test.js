@@ -32,3 +32,23 @@ test("isMissionOverdue: no marca fuera de tiempo una mision completada", () => {
   const result = isMissionOverdue(doneTask, new Date("2026-04-06T10:00:00"));
   assert.equal(result, false);
 });
+
+test("isMissionOverdue: no marca fuera de tiempo una mision sin fecha", () => {
+  const taskWithoutDueDate = {
+    status: "pending",
+    dueDate: ""
+  };
+
+  const result = isMissionOverdue(taskWithoutDueDate, new Date("2026-04-06T10:00:00"));
+  assert.equal(result, false);
+});
+
+test("isMissionOverdue: no marca fuera de tiempo cuando vence hoy", () => {
+  const dueTodayTask = {
+    status: "pending",
+    dueDate: "2026-04-06"
+  };
+
+  const result = isMissionOverdue(dueTodayTask, new Date("2026-04-06T18:30:00"));
+  assert.equal(result, false);
+});
