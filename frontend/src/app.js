@@ -1,10 +1,43 @@
 const STORAGE_KEY = "gestor_tareas_tasks";
 
+function fallbackValidateMissionName(title) {
+  if (!title || !title.trim()) {
+    return "El nombre de la mision es obligatorio.";
+  }
+  return "";
+}
+
+function fallbackIsMissionOverdue(task, now = new Date()) {
+  if (task.status === "done" || !task.dueDate) {
+    return false;
+  }
+
+  const [year, month, day] = task.dueDate.split("-").map(Number);
+  const dueDate = new Date(year, month - 1, day);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return dueDate < today;
+}
+
+const taskRules = window.TaskRules || {
+  validateMissionName: fallbackValidateMissionName,
+  isMissionOverdue: fallbackIsMissionOverdue
+};
+const missionNameValidator =
+  typeof taskRules.validateMissionName === "function"
+    ? taskRules.validateMissionName
+    : fallbackValidateMissionName;
+const missionOverdueChecker =
+  typeof taskRules.isMissionOverdue === "function"
+    ? taskRules.isMissionOverdue
+    : fallbackIsMissionOverdue;
+
 const form = document.getElementById("task-form");
 const titleInput = document.getElementById("title");
 const descriptionInput = document.getElementById("description");
 const prioritySelect = document.getElementById("priority");
 const dueDateInput = document.getElementById("due-date");
+const addMissionButton =
+  document.getElementById("add-mission-button") || document.querySelector("#task-form .primary-button");
 const formError = document.getElementById("form-error");
 const taskList = document.getElementById("task-list");
 const filterGroup = document.getElementById("filter-group");
@@ -14,6 +47,27 @@ const statTotal = document.getElementById("stat-total");
 const statPending = document.getElementById("stat-pending");
 const statDone = document.getElementById("stat-done");
 const statOverdue = document.getElementById("stat-overdue");
+
+const requiredElementsReady =
+  form &&
+  titleInput &&
+  descriptionInput &&
+  prioritySelect &&
+  dueDateInput &&
+  addMissionButton &&
+  formError &&
+  taskList &&
+  filterGroup &&
+  searchInput &&
+  sortSelect &&
+  statTotal &&
+  statPending &&
+  statDone &&
+  statOverdue;
+
+if (!requiredElementsReady) {
+  console.error("No se pudo inicializar la app: faltan elementos del DOM.");
+}
 
 const priorityLabelMap = {
   low: "Rutinaria",
@@ -35,6 +89,36 @@ const uiState = {
 
 let tasks = loadTasks();
 
+function normalizeTask(rawTask) {
+  if (!rawTask || typeof rawTask !== "object") {
+    return null;
+  }
+
+  const title = String(rawTask.title || "").trim();
+  if (!title) {
+    return null;
+  }
+
+  const priority = ["low", "medium", "high"].includes(rawTask.priority)
+    ? rawTask.priority
+    : "medium";
+
+  const status = rawTask.status === "done" ? "done" : "pending";
+  const description = String(rawTask.description || "").trim();
+  const dueDate = typeof rawTask.dueDate === "string" ? rawTask.dueDate : "";
+  const createdAt = rawTask.createdAt || new Date().toISOString();
+
+  return {
+    id: Number(rawTask.id) || Date.now() + Math.floor(Math.random() * 1000),
+    title,
+    description,
+    priority,
+    dueDate,
+    status,
+    createdAt
+  };
+}
+
 function loadTasks() {
   try {
     const storedTasks = localStorage.getItem(STORAGE_KEY);
@@ -53,41 +137,31 @@ function loadTasks() {
     }
 
     const parsed = JSON.parse(storedTasks);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.map(normalizeTask).filter(Boolean);
   } catch (error) {
     return [];
   }
 }
 
 function saveTasks() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-}
-
-function getTodayDateOnly() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function isTaskOverdue(task) {
-  if (task.status === "done" || !task.dueDate) {
-    return false;
-  }
-
-  const [year, month, day] = task.dueDate.split("-").map(Number);
-  const dueDate = new Date(year, month - 1, day);
-  return dueDate < getTodayDateOnly();
+  return missionOverdueChecker(task);
 }
 
 function validateFormData(taskData) {
-  if (!taskData.title) {
-    return "El nombre de la mision es obligatorio.";
-  }
-
-  if (taskData.title.length < 3) {
-    return "El nombre de la mision debe tener al menos 3 caracteres.";
-  }
-
-  return "";
+  return missionNameValidator(taskData.title);
 }
 
 function createTask(taskData) {
@@ -100,7 +174,15 @@ function createTask(taskData) {
     status: "pending",
     createdAt: new Date().toISOString()
   });
-  saveTasks();
+  return saveTasks();
+}
+
+function ensureTaskIntegrity() {
+  const validTasks = tasks.map(normalizeTask).filter(Boolean);
+  if (validTasks.length !== tasks.length) {
+    tasks = validTasks;
+    saveTasks();
+  }
 }
 
 function toggleTaskStatus(taskId) {
@@ -300,32 +382,61 @@ function renderTaskList() {
 }
 
 function render() {
+  ensureTaskIntegrity();
   renderStats();
   renderFilters();
   renderTaskList();
 }
 
 function handleFormSubmit(event) {
-  event.preventDefault();
-
-  const taskData = {
-    title: titleInput.value.trim(),
-    description: descriptionInput.value.trim(),
-    priority: prioritySelect.value,
-    dueDate: dueDateInput.value
-  };
-
-  const validationError = validateFormData(taskData);
-  formError.textContent = validationError;
-  if (validationError) {
-    return;
+  if (event && typeof event.preventDefault === "function") {
+    event.preventDefault();
   }
 
-  createTask(taskData);
-  form.reset();
-  prioritySelect.value = "medium";
-  formError.textContent = "";
-  render();
+  try {
+    const taskData = {
+      title: titleInput.value.trim(),
+      description: descriptionInput.value.trim(),
+      priority: prioritySelect.value,
+      dueDate: dueDateInput.value
+    };
+
+    const validationError = validateFormData(taskData);
+    formError.textContent = validationError;
+    if (validationError) {
+      return;
+    }
+
+    const saved = createTask(taskData);
+    if (!saved) {
+      formError.textContent = "No se pudo guardar en el navegador, pero la mision se agrego en memoria.";
+    } else {
+      formError.textContent = "Mision registrada correctamente.";
+    }
+
+    // Evita que una mision nueva quede oculta por filtros o busquedas activas.
+    uiState.filter = "all";
+    uiState.query = "";
+    searchInput.value = "";
+    uiState.sort = "newest";
+    sortSelect.value = "newest";
+
+    form.reset();
+    prioritySelect.value = "medium";
+    if (formError.textContent.startsWith("No se pudo")) {
+      setTimeout(() => {
+        formError.textContent = "";
+      }, 2600);
+    } else {
+      setTimeout(() => {
+        formError.textContent = "";
+      }, 1600);
+    }
+    render();
+  } catch (error) {
+    formError.textContent = "Ocurrio un error al registrar la mision.";
+    console.error(error);
+  }
 }
 
 function handleFilterClick(event) {
@@ -348,9 +459,12 @@ function handleSortChange(event) {
   render();
 }
 
-form.addEventListener("submit", handleFormSubmit);
-filterGroup.addEventListener("click", handleFilterClick);
-searchInput.addEventListener("input", handleSearchInput);
-sortSelect.addEventListener("change", handleSortChange);
+if (requiredElementsReady) {
+  form.addEventListener("submit", handleFormSubmit);
+  addMissionButton.addEventListener("click", handleFormSubmit);
+  filterGroup.addEventListener("click", handleFilterClick);
+  searchInput.addEventListener("input", handleSearchInput);
+  sortSelect.addEventListener("change", handleSortChange);
 
-render();
+  render();
+}
